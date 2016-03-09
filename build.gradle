@@ -1,0 +1,89 @@
+apply {
+	plugin "scala"
+	plugin "war"
+	plugin "eclipse-wtp"
+	//plugin "jetty"
+	from "gretty.plugin" // latest jetty server integration
+	//http://akhikhl.github.io/gretty-doc/Gretty-tasks
+}
+
+
+sourceCompatibility = 1.7
+version = "1.0"
+
+task fatJar(type: Jar) {
+	manifest {
+        attributes 'Implementation-Title': 'First Scala Spray',  
+        	'Implementation-Version': version,
+        	'Main-Class': 'first.Main'
+    }
+    baseName = project.name + '-all'
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar
+}
+task copyToLib( type: Copy ) {
+    into "$buildDir/libs/lib"
+    from configurations.runtime
+}
+
+jar.doFirst{
+	manifest {
+        attributes("Implementation-Title": "Gradle Quickstart", 
+        			"Implementation-Version": version,
+        			"Class-Path": configurations.compile.collect { "lib/"+it.getName() }.join(' '),
+                	"Main-Class": "first.Main")
+    }
+}
+jar {
+   /* manifest {
+        attributes("Implementation-Title": "Gradle Quickstart", 
+        			"Implementation-Version": version,
+        			"Class-Path": configurations.compile.collect { it.getName() }.join(' '),
+                	"Main-Class": "first.Main")
+    }*/
+    
+    dependsOn copyToLib 
+}
+
+repositories {
+    mavenCentral()
+    maven {
+        url "http://repo.spray.io"
+    }
+}
+
+def scalaVersion = "2.11.5"
+def sprayVersion = "2.11:1.3.2"
+def akkaVersion = "2.11:2.3.9"
+
+
+dependencies {
+    compile "commons-collections:commons-collections:3.2",
+    		"ch.qos.logback:logback-classic:1.0.+",
+    		"org.scala-lang:scala-library:$scalaVersion",
+			"io.spray:spray-servlet_$sprayVersion",
+			"io.spray:spray-routing_$sprayVersion",
+			"io.spray:spray-can_$sprayVersion",
+			"com.typesafe.akka:akka-actor_$akkaVersion",
+			"com.fasterxml.jackson.module:jackson-module-scala_2.11:2.5.0"
+	
+    testCompile "junit:junit:4.+",
+    			"org.scala-lang:scala-library:$scalaVersion",
+    			"io.spray:spray-testkit_$sprayVersion",
+    			"com.typesafe.akka:akka-testkit_$akkaVersion",
+    			"org.scalatest:scalatest_2.11:3.+"
+    			
+    providedCompile 'javax.servlet:javax.servlet-api:3.1.0'
+}
+
+test {
+    systemProperties "property": "value"
+}
+
+uploadArchives {
+    repositories {
+       flatDir {
+           dirs "repos"
+       }
+    }
+}
